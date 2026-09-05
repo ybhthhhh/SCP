@@ -1,0 +1,9 @@
+{
+  "repository": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+  "revision": "ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562",
+  "local_path": "models/DeepSeek-R1-Distill-Qwen-1.5B",
+  "weight_file": "model.safetensors",
+  "weight_bytes": 3554214621,
+  "weight_sha256": "58858233513d76b8703e72eed6ce16807b523328188e13329257fb9594462945",
+  "downloaded_at": "2026-09-05"
+}

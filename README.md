@@ -16,8 +16,9 @@ Reflections in Reasoning LLMs**（Findings of ACL 2026）。本仓库实现论�
 6. 在 DAPO-Math-17k 上训练 220 步 GRPO：正确性奖励为主，只对正确轨迹施加
    组内相对长度惩罚。
 
-论文实验使用 DeepSeek-R1-Distill-Qwen-1.5B/7B 和单节点 4×A800。本机如果
-没有 GPU，只能运行预处理与单元测试，训练命令应在 4 GPU 节点执行。
+本仓库将复现范围收缩到 DeepSeek-R1-Distill-Qwen-1.5B；论文实验使用单节点
+4×A800。本机如果没有 GPU，只能运行预处理与单元测试，训练命令应在 4 GPU
+节点执行。
 
 ## 已知论文缺失信息
 
@@ -41,6 +42,8 @@ Reflections in Reasoning LLMs**（Findings of ACL 2026）。本仓库实现论�
 ```bash
 python3 -m pip install -e '.[data,test]'
 bash scripts/download_data.sh
+hf download deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+  --local-dir models/DeepSeek-R1-Distill-Qwen-1.5B
 ```
 
 数据来自官方公开源：
@@ -92,8 +95,6 @@ python3 scripts/build_dpo.py \
 bash scripts/run_lf_stage.sh configs/dpo_1.5b.yaml outputs/dpo-1.5b
 llamafactory-cli export configs/export_dpo.yaml
 ```
-
-`run_lf_stage.sh` 自动寻找输出目录中编号最大的 `checkpoint-*` 并续训。仓库同时提供 `configs/sft_7b.yaml`、`configs/dpo_7b.yaml` 和 `configs/export_dpo_7b.yaml`，7B 复现可直接使用这些配置。
 
 ## GRPO（崩溃后可恢复）
 

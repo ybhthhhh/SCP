@@ -41,30 +41,20 @@ SPLIT_TOKENS = (
 )
 
 _BOUNDARY = re.compile(
-    r"(?i)(?<![A-Za-z])(?:" + "|".join(re.escape(x) for x in SPLIT_TOKENS) + r")(?:\b|(?=\s))"
+    r"(?=" + "|".join(re.escape(f" {token} ") for token in SPLIT_TOKENS) + r")"
 )
 
 
 def split_cot(text: str) -> list[str]:
-    """Return non-empty chunks while keeping each trigger with its following text.
+    """Split on Appendix B's literal, case-sensitive, space-padded tokens.
 
-    New paragraphs are also treated as boundaries. Trigger matching is
-    case-insensitive but does not split substrings inside another word.
+    A lookahead keeps the trigger at the beginning of its following chunk.
+    Padding lets a trigger at the beginning or end obey the same literal rule.
     """
 
     text = text.strip()
     if not text:
         return []
 
-    chunks: list[str] = []
-    for paragraph in re.split(r"\n\s*\n+", text):
-        paragraph = paragraph.strip()
-        if not paragraph:
-            continue
-        starts = [m.start() for m in _BOUNDARY.finditer(paragraph)]
-        starts = sorted(set([0, *starts, len(paragraph)]))
-        for left, right in zip(starts, starts[1:]):
-            chunk = paragraph[left:right].strip()
-            if chunk:
-                chunks.append(chunk)
-    return chunks
+    padded = f" {text} "
+    return [chunk.strip() for chunk in _BOUNDARY.split(padded) if chunk.strip()]

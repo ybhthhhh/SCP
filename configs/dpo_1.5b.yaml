@@ -1,0 +1,38 @@
+### Paper: Appendix D.2
+model_name_or_path: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+adapter_name_or_path: outputs/sft-1.5b
+trust_remote_code: true
+
+stage: dpo
+do_train: true
+finetuning_type: lora
+lora_rank: 32
+lora_target: all
+pref_beta: 0.1  # beta is defined but not reported in the paper
+pref_loss: sigmoid
+
+dataset_dir: configs
+dataset: scp_dpo
+template: deepseekr1
+cutoff_len: 8192
+preprocessing_num_workers: 16
+dataloader_num_workers: 4
+
+output_dir: outputs/dpo-1.5b
+logging_steps: 1
+save_steps: 10
+save_total_limit: 3
+plot_loss: true
+overwrite_output_dir: false
+report_to: wandb
+
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16  # global batch 64 on 4 GPUs
+learning_rate: 1.0e-7
+num_train_epochs: 5.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.03
+bf16: true
+gradient_checkpointing: true
+ddp_timeout: 180000000
+resume_from_checkpoint: null

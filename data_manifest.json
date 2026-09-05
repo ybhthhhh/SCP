@@ -1,0 +1,15 @@
+{
+  "light_r1_stage2": {
+    "url": "https://huggingface.co/datasets/qihoo360/Light-R1-SFTData/resolve/main/stage2-3k.json",
+    "bytes": 72499896,
+    "sha256": "dc4465dfe32fc02209e95cce8bdb5e863a7df634284a45d6b7d65b0e48b3f767",
+    "rows": 3533,
+    "note": "Downloaded 2026-09-05; the paper reports 3335 post-preprocessing samples."
+  },
+  "dapo_math_17k": {
+    "url": "https://huggingface.co/datasets/BytedTsinghua-SIA/DAPO-Math-17k/resolve/main/data/dapo-math-17k.parquet"
+  },
+  "aime_2024": {
+    "url": "https://huggingface.co/datasets/BytedTsinghua-SIA/AIME-2024/resolve/main/data/aime-2024.parquet"
+  }
+}

@@ -1,0 +1,10 @@
+model_name_or_path: deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+adapter_name_or_path: outputs/dpo-1.5b
+template: deepseekr1
+finetuning_type: lora
+trust_remote_code: true
+
+export_dir: outputs/dpo-1.5b-merged
+export_size: 4
+export_device: cpu
+export_legacy_format: false

@@ -1,0 +1,17 @@
+{
+  "scp_sft": {
+    "file_name": "../data/processed/scp-sft.jsonl",
+    "formatting": "sharegpt",
+    "columns": {"messages": "conversations"}
+  },
+  "scp_dpo": {
+    "file_name": "../data/processed/scp-dpo.jsonl",
+    "formatting": "sharegpt",
+    "ranking": true,
+    "columns": {
+      "messages": "conversations",
+      "chosen": "chosen",
+      "rejected": "rejected"
+    }
+  }
+}

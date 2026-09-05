@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+wandb/
+ray_results/
+logs/
+outputs/
+data/raw/
+data/processed/
+*.pdf

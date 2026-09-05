@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scp-repro"
+version = "0.1.0"
+description = "Reproduction of graph-based CoT pruning for efficient reasoning"
+requires-python = ">=3.10"
+dependencies = [
+  "networkx>=3.2,<4",
+  "openai>=1.50,<2",
+  "pydantic>=2.7,<3",
+  "PyYAML>=6,<7",
+]
+
+[project.optional-dependencies]
+data = ["datasets>=3,<5", "pandas>=2,<3", "pyarrow>=15"]
+test = ["pytest>=8,<9"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

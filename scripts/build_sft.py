@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Prune graph records and emit LLaMA-Factory ShareGPT SFT JSONL."""
+"""Prune graph records and emit portable SFT JSONL.
+
+Each record contains both OpenAI-style messages (used by the local training
+platform) and ShareGPT-style conversations (used by LLaMA-Factory).
+"""
 
 from __future__ import annotations
 
@@ -34,10 +38,15 @@ def main() -> None:
             reasoning_indices = [i for i in kept_indices if i != final_index]
             retained_reasoning = "\n\n".join(row["chunks"][i].strip() for i in reasoning_indices)
             retained = compose_response(retained_reasoning, row.get("final_answer", ""))
+            messages = [
+                {"role": "user", "content": row["question"]},
+                {"role": "assistant", "content": retained},
+            ]
             output.write(
                 json.dumps(
                     {
                         "id": row["id"],
+                        "messages": messages,
                         "conversations": [
                             {"from": "human", "value": row["question"]},
                             {"from": "gpt", "value": retained},

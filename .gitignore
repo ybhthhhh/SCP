@@ -11,3 +11,4 @@ models/
 data/raw/
 data/processed/
 *.pdf
+/天数README.md

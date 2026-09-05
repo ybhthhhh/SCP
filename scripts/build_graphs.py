@@ -19,8 +19,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--model", default=os.getenv("GRAPH_MODEL", "qwen3-turbo"))
+    parser.add_argument("--model", default=os.getenv("GRAPH_MODEL", "deepseek-v4-flash"))
     parser.add_argument("--base-url", default=os.getenv("GRAPH_BASE_URL"))
+    parser.add_argument("--host-header", default=os.getenv("GRAPH_HOST_HEADER"))
     parser.add_argument("--api-key-env", default="GRAPH_API_KEY")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--max-retries", type=int, default=5)
@@ -32,7 +33,10 @@ def main() -> int:
     api_key = os.getenv(args.api_key_env)
     if not api_key:
         raise SystemExit(f"missing API key environment variable: {args.api_key_env}")
-    client = OpenAI(api_key=api_key, base_url=args.base_url, max_retries=args.max_retries)
+    default_headers = {"Host": args.host_header} if args.host_header else None
+    client = OpenAI(
+        api_key=api_key, base_url=args.base_url, max_retries=args.max_retries, default_headers=default_headers
+    )
 
     def complete(system: str, user: str) -> str:
         result = client.chat.completions.create(

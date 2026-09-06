@@ -1,0 +1,15 @@
+{
+  "mode": "ddp",
+  "rows": 237,
+  "world_size": 8,
+  "seq_len": 6144,
+  "learning_rate": 1e-05,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "total_time_s": 215.44054579734802,
+  "avg_step_s": 7.1813515265782675,
+  "samples_per_s": 1.1139964351267175,
+  "tokens_per_s": 6844.3940974185525,
+  "max_peak_reserved_gib": 23.842
+}

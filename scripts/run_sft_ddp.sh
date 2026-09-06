@@ -14,7 +14,7 @@ P2P_TEST=${P2P_TEST:-/share/platform/p2pBandwidthTest}
 
 # Provisional lightweight values; override after the target-length memory smoke test.
 MAX_STEPS=${MAX_STEPS:-30}
-SEQ_LEN=${SEQ_LEN:-8192}
+SEQ_LEN=${SEQ_LEN:-6144}
 PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-1}
 GRAD_ACCUM=${GRAD_ACCUM:-1}
 LR=${LR:-1e-5}

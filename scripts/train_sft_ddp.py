@@ -143,6 +143,8 @@ def main():
     model.config.use_cache = False
     if not args.no_lora:
         model = get_peft_model(model, lora_cfg)
+        if args.gradient_checkpointing:
+            model.enable_input_require_grads()
 
     total_samples = args.max_steps * args.per_device_batch_size * args.grad_accum
     train_ds = build_dataset(tokenizer, args.seq_len, total_samples, args.dataset)
@@ -173,6 +175,11 @@ def main():
             run_logger.finish("failed", {"error": str(e)})
         raise
     elapsed = time.time() - start
+    peak_reserved = torch.tensor(
+        torch.cuda.max_memory_reserved(), device=torch.cuda.current_device()
+    )
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.all_reduce(peak_reserved, op=torch.distributed.ReduceOp.MAX)
     trainer.save_model(str(out_dir))
 
     if is_main:
@@ -183,10 +190,18 @@ def main():
         tokens_per_s = samples_per_s * args.seq_len
         metrics = {
             "mode": "ddp" if world_size > 1 else "single_gpu",
+            "rows": len(train_ds),
+            "world_size": world_size,
+            "seq_len": args.seq_len,
+            "learning_rate": args.lr,
+            "lora_r": args.lora_r,
+            "lora_alpha": args.lora_alpha,
+            "lora_dropout": args.lora_dropout,
             "total_time_s": elapsed,
             "avg_step_s": elapsed / args.max_steps,
             "samples_per_s": samples_per_s,
             "tokens_per_s": tokens_per_s,
+            "max_peak_reserved_gib": round(peak_reserved.item() / 2**30, 3),
         }
         metrics_path = out_dir / "metrics.json"
         metrics_path.write_text(json.dumps(metrics, ensure_ascii=False, indent=2))

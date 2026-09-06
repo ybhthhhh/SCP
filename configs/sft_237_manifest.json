@@ -1,5 +1,5 @@
 {
-  "source_graph_file": "data/processed/graphs-300.jsonl",
+  "source_graph_file": "data/processed/graphs-237.jsonl",
   "source_graph_sha256": "336ec4951e845f75ce4e96ed19eea649ddc2abbc2505c88ccf42808e7efc7b34",
   "sft_file": "data/processed/scp-sft-237.jsonl",
   "sft_sha256": "bd459b8bbf7fbeb98158ee5e661beeaa03a70d6f76748f9c156947f6459ced82",

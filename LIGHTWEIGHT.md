@@ -1,16 +1,15 @@
 # 1.5B 轻量复现说明
 
-本配置只复现 SCP 的最小可运行链路，不追求论文训练规模。训练数据、模型和
-checkpoint 保留在本地，不提交 GitHub。
+本配置只复现 SCP 的最小可运行链路，不追求论文训练规模。已完成的 237 条构图
+数据、SFT 数据和三个训练阶段的 LoRA adapter 会提交 GitHub；基座模型和合并后的
+完整模型体积过大，仍只保留在本地。
 
 ## 本机资源策略
 
-本机有 8 张 32 GiB DT1000。GPU 0–3 位于 NUMA 0，GPU 4–7 位于 NUMA 1；
-跨组通信经过 SYS。默认使用同一 NUMA 的 GPU 0,1,2,3，并在多卡训练启动前运行
-`/share/platform/p2pBandwidthTest`。检查失败时脚本会停止，不冒险启动训练。
-
-卡数不是论文超参数。若后续显存探测表明两卡已经足够，可设置
-`GPU_IDS=0,1 NUM_GPUS=2`；不要用跨 NUMA 的组合。
+本机有 8 张 32 GiB DT1000。SFT 默认使用 GPU 0–7 的原生 PyTorch DDP，每卡各放
+一份 1.5B 基座和 LoRA adapter，不使用 DeepSpeed/ZeRO3。启动前运行
+`/share/platform/p2pBandwidthTest`；检查失败时脚本会停止。8 卡能提高吞吐量，但
+DDP 不会分摊单条长序列的激活显存，正式长度仍需先做显存探测。
 
 ## 当前已确定的范围
 
@@ -43,10 +42,10 @@ PYTHONPATH=src python3 scripts/prepare_lightweight_subset.py \
 ```bash
 python3 scripts/build_graphs.py \
   --input data/processed/light-r1-300.jsonl \
-  --output data/processed/graphs-300.jsonl
+  --output data/processed/graphs-237.jsonl
 
 python3 scripts/build_sft.py \
-  --input data/processed/graphs-300.jsonl \
+  --input data/processed/graphs-237.jsonl \
   --output data/processed/scp-sft-237.jsonl \
   --k 2 --m 0.9
 ```
@@ -56,9 +55,13 @@ python3 scripts/build_sft.py \
 内容。正式参数确认后，通过统一脚本启动相应阶段：
 
 ```bash
-GPU_IDS=0,1,2,3 NUM_GPUS=4 \
+GPU_IDS=0,1,2,3,4,5,6,7 NUM_GPUS=8 \
   bash scripts/run_platform_lightweight.sh sft
 ```
+
+SFT 分支直接通过 `torchrun` 启动 `scripts/train_sft_ddp.py`。脚本固定走 DDP，
+237 条记录全部进入 Dataset；8 卡、每卡 batch 1 时一个 epoch 为 30 个 optimizer
+step（DistributedSampler 会补齐 3 个样本）。序列长度等参数仍是显存探测前的占位值。
 
 本地平台只保存 LoRA adapter，且 DPO/GRPO 不能直接把前一阶段 adapter 当作
 基座。因此每阶段结束后必须先合并：

@@ -15,8 +15,10 @@ checkpoint 保留在本地，不提交 GitHub。
 ## 当前已确定的范围
 
 - 基座：本地 `DeepSeek-R1-Distill-Qwen-1.5B`
-- SFT：固定种子 42，从上游 3,533 条中无放回抽取 300 条
+- 候选集：固定种子 42，从上游 3,533 条中无放回抽取 300 条
 - 抽样方法与 300 个样本 ID：`configs/lightweight_subset_manifest.json`
+- 完成构图并用于 SFT：237 条；清单与哈希见 `configs/sft_237_manifest.json`
+- 剩余构图任务已按轻量复现范围主动停止
 - SFT/DPO/GRPO 的步数、batch、序列长度和 rollout 数暂未最终确定
 - 运行脚本中的数值只是保守占位值，正式训练前需用显存探测结果覆盖
 
@@ -30,8 +32,9 @@ PYTHONPATH=src python3 scripts/prepare_lightweight_subset.py \
   --size 300 --seed 42
 ```
 
-这 300 条未剪枝轨迹使用本地 tokenizer 的长度统计为：P50 643、P95 963、
-最大 1213 tokens，没有样本超过 2048 tokens。
+最终 237 条剪枝 SFT 文本的 token 长度为：P50 4,680、P95 12,317、最大
+16,944；其中 50 条超过 8,192，2 条超过 tokenizer 标称的 16,384。正式截断长度
+需在显存探测后确定。
 
 ## 数据与训练顺序
 
@@ -44,12 +47,13 @@ python3 scripts/build_graphs.py \
 
 python3 scripts/build_sft.py \
   --input data/processed/graphs-300.jsonl \
-  --output data/processed/scp-sft-300.jsonl \
+  --output data/processed/scp-sft-237.jsonl \
   --k 2 --m 0.9
 ```
 
-`build_sft.py` 同时输出平台使用的 `messages` 和 LLaMA-Factory 使用的
-`conversations`。正式参数确认后，通过统一脚本启动相应阶段：
+`build_sft.py` 同时输出平台使用的预格式化 `text` 和 LLaMA-Factory 使用的
+`conversations`。预格式化避免 DeepSeek chat template 删除 `<think>...</think>`
+内容。正式参数确认后，通过统一脚本启动相应阶段：
 
 ```bash
 GPU_IDS=0,1,2,3 NUM_GPUS=4 \

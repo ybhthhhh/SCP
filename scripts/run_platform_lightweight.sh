@@ -13,13 +13,13 @@ BASE_MODEL=${BASE_MODEL:-${PROJECT_ROOT}/models/DeepSeek-R1-Distill-Qwen-1.5B}
 
 case "${STAGE}" in
   sft)
-    DATASET=${DATASET:-${PROJECT_ROOT}/data/processed/scp-sft-300.jsonl}
+    DATASET=${DATASET:-${PROJECT_ROOT}/data/processed/scp-sft-237.jsonl}
     OUTPUT_DIR=${OUTPUT_DIR:-${PROJECT_ROOT}/outputs/lightweight/sft-adapter}
     ARGS=(--mode train --algo sft --finetuning lora --model "${BASE_MODEL}"
       --dataset "${DATASET}" --output-dir "${OUTPUT_DIR}" --num-gpus "${NUM_GPUS}"
       --max-steps 38 --seq-len 2048 --per-device-batch-size 1 --grad-accum 8
       --lr 1e-5 --lora-r 8 --lora-alpha 16 --lora-dropout 0.05
-      --run-name scp-light-sft-300)
+      --run-name scp-light-sft-237)
     ;;
   dpo)
     MODEL_PATH=${MODEL_PATH:-${PROJECT_ROOT}/outputs/lightweight/sft-merged}

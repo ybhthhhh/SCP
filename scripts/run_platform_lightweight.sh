@@ -6,9 +6,9 @@ shift
 
 PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PLATFORM_RUN=${PLATFORM_RUN:-/share/platform/scripts/platform_run.py}
-GPU_IDS=${GPU_IDS:-0,1,2,3}
-NUM_GPUS=${NUM_GPUS:-4}
 P2P_TEST=${P2P_TEST:-/share/platform/p2pBandwidthTest}
+P2P_TIMEOUT=${P2P_TIMEOUT:-45s}
+P2P_KILL_AFTER=${P2P_KILL_AFTER:-5s}
 BASE_MODEL=${BASE_MODEL:-${PROJECT_ROOT}/models/DeepSeek-R1-Distill-Qwen-1.5B}
 
 case "${STAGE}" in
@@ -16,26 +16,27 @@ case "${STAGE}" in
     exec bash "${PROJECT_ROOT}/scripts/run_sft_ddp.sh" "$@"
     ;;
   dpo)
-    MODEL_PATH=${MODEL_PATH:-${PROJECT_ROOT}/outputs/lightweight/sft-merged}
-    DATASET=${DATASET:-${PROJECT_ROOT}/data/processed/scp-dpo-light.jsonl}
-    OUTPUT_DIR=${OUTPUT_DIR:-${PROJECT_ROOT}/outputs/lightweight/dpo-adapter}
-    ARGS=(--mode train --algo dpo --finetuning lora --model "${MODEL_PATH}"
-      --preference-dataset "${DATASET}" --output-dir "${OUTPUT_DIR}" --num-gpus "${NUM_GPUS}"
-      --max-steps 25 --seq-len 2048 --prompt-max-len 512
-      --per-device-batch-size 1 --grad-accum 4 --lr 1e-6 --beta 0.1
-      --lora-r 8 --lora-alpha 16 --lora-dropout 0.05
-      --run-name scp-light-dpo)
+    exec bash "${PROJECT_ROOT}/scripts/run_dpo_ddp.sh" "$@"
     ;;
   grpo)
-    MODEL_PATH=${MODEL_PATH:-${PROJECT_ROOT}/outputs/lightweight/dpo-merged}
+    NUM_GPUS=${NUM_GPUS:-1}
+    if [[ -z ${GPU_IDS:-} ]]; then
+      if (( NUM_GPUS == 1 )); then
+        GPU_IDS=0
+      else
+        GPU_IDS=0,1,2,3,4,5,6,7
+      fi
+    fi
+    MODEL_PATH=${MODEL_PATH:-${PROJECT_ROOT}/outputs/lightweight/dpo-merged-1536}
     DATASET=${DATASET:-${PROJECT_ROOT}/data/processed/grpo-prompts-light.jsonl}
     OUTPUT_DIR=${OUTPUT_DIR:-${PROJECT_ROOT}/outputs/lightweight/grpo-adapter}
-    REWARD_SPEC=${REWARD_SPEC:?set REWARD_SPEC to /absolute/path/reward.py:function_name}
+    export GRPO_ANSWER_MAP=${GRPO_ANSWER_MAP:-${PROJECT_ROOT}/data/processed/grpo-answer-map-light.json}
+    REWARD_SPEC=${REWARD_SPEC:-${PROJECT_ROOT}/scripts/grpo_math_reward.py:score}
     ARGS=(--mode train --algo grpo --finetuning lora --model "${MODEL_PATH}"
       --prompt-dataset "${DATASET}" --output-dir "${OUTPUT_DIR}" --num-gpus "${NUM_GPUS}"
-      --max-steps 10 --seq-len 1536 --max-tokens 512
+      --max-steps 10 --seq-len 512 --max-tokens 128
       --per-device-batch-size 1 --grad-accum 1 --lr 1e-6
-      --num-generations 4 --temperature 1.0 --top-p 1.0
+      --num-generations 2 --temperature 1.0 --top-p 1.0
       --rollout-backend hf --reward-backend function --reward-spec "${REWARD_SPEC}"
       --kl-coef 1e-3 --ppo-clip-range 0.2
       --lora-r 8 --lora-alpha 16 --lora-dropout 0.0
@@ -50,7 +51,7 @@ esac
 if (( NUM_GPUS > 1 )); then
   P2P_LOG=$(mktemp /tmp/scp-p2p.XXXXXX)
   trap 'rm -f "${P2P_LOG}"' EXIT
-  timeout --kill-after=2s 10s "${P2P_TEST}" >"${P2P_LOG}" 2>&1 || true
+  timeout --kill-after="${P2P_KILL_AFTER}" "${P2P_TIMEOUT}" "${P2P_TEST}" >"${P2P_LOG}" 2>&1 || true
   if ! grep -q "P2P Connectivity Matrix" "${P2P_LOG}"; then
     echo "P2P preflight failed; refusing to start multi-GPU training" >&2
     exit 3

@@ -21,5 +21,7 @@ data/processed/*
 !data/processed/graphs-237.jsonl
 !data/processed/scp-sft-237.jsonl
 !data/processed/scp-dpo-light-219.jsonl
+!data/processed/grpo-answer-map-light.json
+!data/processed/grpo-prompts-light.jsonl
 *.pdf
 /天数README.md

@@ -18,7 +18,7 @@ DDP 不会分摊单条长序列的激活显存，正式长度仍需先做显存�
 - 抽样方法与 300 个样本 ID：`configs/lightweight_subset_manifest.json`
 - 完成构图并用于 SFT：237 条；清单与哈希见 `configs/sft_237_manifest.json`
 - 剩余构图任务已按轻量复现范围主动停止
-- SFT 与 DPO 已完成；GRPO 的步数、batch、序列长度和 rollout 数暂未最终确定
+- SFT 与 DPO 已完成；GRPO 已完成单卡 smoke，但正式训练参数仍需确定
 - DPO/GRPO 运行脚本中的数值保持轻量化配置，迁移节点后仍需先看 P2P 状态
 
 重新生成相同子集：
@@ -91,6 +91,21 @@ DPO 偏好数据使用 219 条 original/pruned proxy pairs，不再次调用 API
 `outputs/lightweight/dpo-adapter-1536`，本地 GRPO 前已合并到
 `outputs/lightweight/dpo-merged-1536`。
 
+DAPO-Math-17k 与 AIME-2024 已下载到 `data/raw/`，但 raw parquet 体积较大且仍被
+`.gitignore` 排除。轻量 GRPO 先从 DAPO 构造 32 条 prompt：
+`data/processed/grpo-prompts-light.jsonl`，答案 sidecar 为
+`data/processed/grpo-answer-map-light.json`。平台 GRPO 的 function reward 无法直接读取
+parquet metadata，因此 `scripts/grpo_math_reward.py` 通过 prompt 文本匹配 sidecar 答案，
+模型 prompt 本身不含 ground truth。`scripts/run_platform_lightweight.sh grpo` 已改为单卡
+默认：DPO merged 1536、512 prompt tokens、128 response tokens、2 generations、10
+steps、HF rollout、本地 math reward。
+
+GRPO 当前只做了安全 smoke：单卡 512x64 的 1-step 和 512x128 的 2-step 均通过，
+无 OOM，能完成 rollout、reward、policy update 和 adapter 保存。但随机 DAPO 子集在
+短生成长度下 reward 全为 0，因此没有把该 smoke adapter 作为正式 GRPO 结果上传。
+正式 GRPO 需要继续选择更容易产生非零 correctness reward 的轻量数据/更长生成，或安装
+pinned verl 后按论文版 `scripts/run_grpo.sh` 跑。
+
 ## 验证状态
 
 本轮已通过 Shell 语法检查、Python compileall、平台训练环境导入检查、8 卡
@@ -99,4 +114,4 @@ token DPO 10-step smoke/28-step 正式训练。SFT adapter SHA-256 为
 `caa6b5f6f247c0bb7c3d0edc2d3bfca0af8211c4b6d0598caf367ed4923e1251`；DPO adapter
 SHA-256 为 `375c775f25dc5b161034db984451b291a901c2d891f7c949b8424bf171a1afca`。
 仓库核心单测在此前运行中为 13 项通过；当前环境没有 pytest，因此本轮未重新执行。
-GRPO 仍需做目标配置的显存和端到端检查。
+GRPO 已通过平台轻量 smoke，但正式非零奖励训练仍需继续。

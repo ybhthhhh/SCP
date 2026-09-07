@@ -1,0 +1,17 @@
+{
+  "mode": "single_gpu",
+  "rows": 219,
+  "world_size": 1,
+  "seq_len": 1536,
+  "prompt_max_len": 512,
+  "learning_rate": 1e-07,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "finetuning": "lora",
+  "total_time_s": 67.17195582389832,
+  "avg_step_s": 2.398998422282083,
+  "samples_per_s": 0.4168406242838356,
+  "beta": 0.1,
+  "max_peak_reserved_gib": 25.891
+}

@@ -11,8 +11,8 @@ outputs/*
 outputs/lightweight/*
 !outputs/lightweight/sft-adapter/
 !outputs/lightweight/sft-adapter/**
-!outputs/lightweight/dpo-adapter/
-!outputs/lightweight/dpo-adapter/**
+!outputs/lightweight/dpo-adapter-1536/
+!outputs/lightweight/dpo-adapter-1536/**
 !outputs/lightweight/grpo-adapter/
 !outputs/lightweight/grpo-adapter/**
 models/
@@ -20,5 +20,6 @@ data/raw/
 data/processed/*
 !data/processed/graphs-237.jsonl
 !data/processed/scp-sft-237.jsonl
+!data/processed/scp-dpo-light-219.jsonl
 *.pdf
 /天数README.md

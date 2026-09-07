@@ -18,8 +18,8 @@ DDP 不会分摊单条长序列的激活显存，正式长度仍需先做显存�
 - 抽样方法与 300 个样本 ID：`configs/lightweight_subset_manifest.json`
 - 完成构图并用于 SFT：237 条；清单与哈希见 `configs/sft_237_manifest.json`
 - 剩余构图任务已按轻量复现范围主动停止
-- SFT 已完成；DPO/GRPO 的步数、batch、序列长度和 rollout 数暂未最终确定
-- DPO/GRPO 运行脚本中的数值仍是保守占位值，正式训练前需用显存探测结果覆盖
+- SFT 与 DPO 已完成；GRPO 的步数、batch、序列长度和 rollout 数暂未最终确定
+- DPO/GRPO 运行脚本中的数值保持轻量化配置，迁移节点后仍需先看 P2P 状态
 
 重新生成相同子集：
 
@@ -77,10 +77,26 @@ batch 1、全局 batch 8、30 steps、BF16、LoRA r=8/alpha=16/dropout=0.05、�
   --output outputs/lightweight/sft-merged
 ```
 
+DPO 偏好数据使用 219 条 original/pruned proxy pairs，不再次调用 API。DPO 数据长度
+为：prompt+max(response) P50 5,666、P95 14,409、最大 17,222。3072 token 的
+1-step smoke 峰值为 26.887 GiB，但正式 28-step 在第 1 步后 OOM；2048 token
+2-step smoke 通过、正式运行在第 4 步 OOM。因此最终采用单卡 1536 token、batch
+1、grad accum 1、28 steps、BF16、LoRA r=8/alpha=16/dropout=0.05、学习率
+1e-7、beta=0.1。1536 的 10-step smoke 和正式 28-step 均通过，正式平均 loss
+0.6872，耗时 67.17 秒，峰值保留显存 25.891 GiB。
+
+本轮当前 shell 的 `hostname` 仍显示旧的 `26-c2d67e`，而 30326 的平台健康文件
+指向 `34-c9073b`；手动 `/share/platform/p2pBandwidthTest` 在 45 秒内无输出。
+因此 DPO 没有强行启动 8 卡 DDP，而是先完成单卡轻量复现。DPO adapter 保存在
+`outputs/lightweight/dpo-adapter-1536`，本地 GRPO 前已合并到
+`outputs/lightweight/dpo-merged-1536`。
+
 ## 验证状态
 
 本轮已通过 Shell 语法检查、Python compileall、平台训练环境导入检查、8 卡
-DDP 启动检查、8,192 与 6,144 token 显存探测，以及完整 237 条 SFT。adapter
-SHA-256 为 `caa6b5f6f247c0bb7c3d0edc2d3bfca0af8211c4b6d0598caf367ed4923e1251`。
+DDP 启动检查、8,192 与 6,144 token 显存探测、完整 237 条 SFT，以及 1536
+token DPO 10-step smoke/28-step 正式训练。SFT adapter SHA-256 为
+`caa6b5f6f247c0bb7c3d0edc2d3bfca0af8211c4b6d0598caf367ed4923e1251`；DPO adapter
+SHA-256 为 `375c775f25dc5b161034db984451b291a901c2d891f7c949b8424bf171a1afca`。
 仓库核心单测在此前运行中为 13 项通过；当前环境没有 pytest，因此本轮未重新执行。
-DPO/GRPO 仍需分别做目标配置的显存和端到端检查。
+GRPO 仍需做目标配置的显存和端到端检查。

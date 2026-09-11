@@ -130,6 +130,47 @@ batch 64、AdamW actor learning rate `1e-6`、KL coefficient `1e-3`、220 steps�
 它每 5 步保存到稳定目录，`trainer.resume_mode=auto` 会在同名实验再次启动时恢复
 最新 checkpoint。不要在重启时更换 `EXPERIMENT_NAME` 或 `CHECKPOINT_DIR`。
 
+## CoreX 节点轻量 GRPO 验证器
+
+`train_policy_microbatch.py` 与 `run_platform_microbatch.sh` 是为当前 CoreX
+DT1000 节点加入的最小 GRPO 验证路径。它不替代上面的 verl 论文配置：用于先验证
+奖励、rollout、反传和多卡通信，再决定是否扩大到论文的 12,000 response tokens 和
+220 步。
+
+当前节点使用 Transformers 4.44.2 和平台提供的 PyTorch 2.1.0。该组合会让 Qwen2
+走 eager attention；平台的动态 KV cache 在长 rollout 中出现过原生层崩溃。因此长
+rollout 使用预分配 static KV cache，并以 `gqa_online` 替换单 token decode 中的
+`repeat_kv + full softmax`，不改变 prompt prefill 或训练 forward。
+
+训练 KL 默认是 sampled-token `k3` 估计：对 rollout 中已采样 action 的
+`log_ratio = log p_ref - log p_policy` 计算
+`exp(log_ratio) - log_ratio - 1`。在对当前策略的 action 分布取期望时，它等于
+`KL(policy || reference)`，但单批数值是采样估计。`--kl-estimator exact` 保留作
+数值对照；它需要全词表 KL 的反传图，在本节点每卡 32 GB、4096 response tokens 时
+已在第二个训练 microbatch 的 backward 阶段 OOM，不应用于长序列训练。
+
+运行单卡 4096-token 验证：
+
+```bash
+cd /root/SCP
+NUM_GPUS=1 GPU_IDS=0 MAX_STEPS=1 MAX_TOKENS=4096 \
+NUM_GENERATIONS=2 ROLLOUT_MICRO_BATCH_SIZE=1 TRAIN_MICRO_BATCH_SIZE=1 \
+GENERATION_CACHE=static ROLLOUT_ATTENTION=gqa_online KL_ESTIMATOR=k3 \
+CHECKPOINT_EVERY=1 bash start_ddp_detached.sh
+```
+
+`start_ddp_detached.sh` 会复制本次运行的训练源码、写入环境和 core-dump 设置，并以
+`setsid /usr/bin/nohup` 启动。不要在多卡 DDP 训练期间从交互终端终止子进程；若需要
+停止或迁移，先检查各 rank 和通信状态，再由启动器整体结束。每个 run 的
+`rank*.events.jsonl`、`nohup.log`、NCCL 日志和 checkpoint 都保存在自己的输出目录。
+
+验证脚本：
+
+```bash
+python test_gqa_online_attention.py train_policy_microbatch.py
+python test_chunked_kl.py train_policy_microbatch.py
+```
+
 ## 验证
 
 ```bash
